@@ -1,4 +1,4 @@
-// face_detect.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+// face_detect.cpp : å®šä¹‰æ§åˆ¶å°åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 
 #include "stdafx.h"
@@ -23,7 +23,7 @@ int main()
 	//  lbpcascade_frontalface.xml  haarcascade_frontalface_alt2.xml
 
 	std::string modelFilePath = "roboman-landmark-model.bin";
-	if (!load_ldmarkmodel(modelFilePath, modelt)) { // ¸ù¾İbinÎÄ¼ş³õÊ¼»¯ ldmarkmodelÊµÀıµÄ²ÎÊı
+	if (!load_ldmarkmodel(modelFilePath, modelt)) { // æ ¹æ®binæ–‡ä»¶åˆå§‹åŒ– ldmarkmodelå®ä¾‹çš„å‚æ•°
 		FACE_TRACE("load_ldmarkmodel failed...");
 		return -1;
 	}
@@ -35,7 +35,7 @@ int main()
 								meanvalue		Mat		 2		  0			0			NULL
 								x				Mat		 2		  0			0			NULL
 								isPCA			false 
-							[1]							 
+							[1]	åŒä¸Š						 
 							[2]
 							[3]
 							[4] 
@@ -55,7 +55,7 @@ int main()
 	cv::Mat current_shape;
 	//for(int i=0; i<10; i++){
 	FACE_TRACE("track start...");
-	int ret = modelt.track(image, current_shape); // Ö÷ÒªÊµÏÖ
+	int ret = modelt.track(image, current_shape); // ä¸»è¦å®ç°
 	FACE_TRACE("track ret:%d", ret);
 
 	cv::Vec3d eav;
@@ -77,7 +77,7 @@ int main()
 					color );
 	}
 
-	cv::imshow("ÌØÕ÷µã",image);
+	cv::imshow("ç‰¹å¾ç‚¹",image);
 	cv::waitKey();
 
 	//system("pause");

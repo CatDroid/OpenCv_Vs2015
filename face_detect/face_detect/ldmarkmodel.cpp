@@ -332,6 +332,77 @@ LinearRegressor::LinearRegressor() : weights(),meanvalue(),x(),isPCA(false)
 
 }
 
+bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
+{
+    this->isPCA = isPCA;
+    if(this->isPCA){
+        cv::Mat mdata = data.colRange(0, data.cols-2).clone();
+        cv::PCA FeaturePCA(mdata, cv::Mat(), CV_PCA_DATA_AS_ROW);
+        std::cout << "特征向量尺度: " <<FeaturePCA.eigenvectors.size() << std::endl;
+        std::cout << "特征值尺度:   " <<FeaturePCA.eigenvalues.size() << std::endl;
+        double eigensum = cv::sum(FeaturePCA.eigenvalues)[0];
+        double lamda = 0.0;
+        int index = 0;
+        for(int i=0; i<FeaturePCA.eigenvalues.rows; i++){
+            lamda += FeaturePCA.eigenvalues.at<float>(i,0);
+            if(lamda/eigensum > 0.97){
+                index = i;
+                std::cout << "特征个数可以压缩为:" << i << "个" << std::endl;
+                break;
+            }
+        }
+        this->meanvalue = FeaturePCA.mean;
+        this->eigenvectors = FeaturePCA.eigenvectors.rowRange(0, index).t();
+        for(int i=0; i<mdata.rows; i++){
+            mdata.row(i) = mdata.row(i) - this->meanvalue;
+        }
+        mdata = mdata*this->eigenvectors;
+        cv::Mat A = cv::Mat::zeros(mdata.rows, mdata.cols+1, mdata.type());
+        for(int i=0; i<mdata.rows; i++){
+            for(int j=0; j<mdata.cols; j++){
+                A.at<float>(i,j) = mdata.at<float>(i,j);
+            }
+        }
+        A.col(A.cols-1) = cv::Mat::ones(A.rows, 1, A.type());
+        mdata.release();
+        //自己的写的最小二乘
+        cv::Mat AT = A.t();
+        cv::Mat ATA = A.t()*A;
+        float lambda = 1.50f * static_cast<float>(cv::norm(ATA)) / static_cast<float>(A.rows);
+        cv::Mat regulariser = cv::Mat::eye(ATA.size(), ATA.type())*lambda;
+        regulariser.at<float>(regulariser.rows-1, regulariser.cols-1) = 0.0f;
+        this->x = (ATA + regulariser).inv(cv::DECOMP_LU)*AT*labels;
+        //opencv提供的最小二乘
+        //cv::solve(A, labels, this->x);
+
+//            this->weights = this->eigenvectors*this->x;
+//            this->eigenvectors.release();
+    }else{
+        cv::Mat A = data.clone();
+        //自己的写的最小二乘
+        cv::Mat AT = A.t();
+        cv::Mat ATA = A.t()*A;
+        float lambda = 1.50f * static_cast<float>(cv::norm(ATA)) / static_cast<float>(A.rows);
+        cv::Mat regulariser = cv::Mat::eye(ATA.size(), ATA.type())*lambda;
+        regulariser.at<float>(regulariser.rows-1, regulariser.cols-1) = 0.0f;
+        this->weights = (ATA + regulariser).inv(cv::DECOMP_LU)*AT*labels;
+        //opencv提供的最小二乘
+        //cv::solve(A, labels, this->weights);
+    }
+    return true; // see todo above
+}
+
+double LinearRegressor::test(cv::Mat data, cv::Mat labels)
+{
+    cv::Mat predictions;
+    for (int i = 0; i < data.rows; ++i) {
+        cv::Mat prediction = this->predict(data.row(i));
+        predictions.push_back(prediction);
+    }
+    return cv::norm(predictions, labels, cv::NORM_L2) / cv::norm(labels, cv::NORM_L2);
+}
+
+
 cv::Mat LinearRegressor::predict(cv::Mat values)
 {
     if(this->isPCA){
@@ -437,6 +508,150 @@ void ldmarkmodel::loadFaceDetModelFile(std::string filePath){
     face_cascade.load(filePath);
     assert( !face_cascade.empty() )  ;
 }
+
+void ldmarkmodel::train(std::vector<ImageLabel> &mImageLabels){
+    assert(HoGParams.size() >= LinearRegressors.size());
+    int samplesNum = 800;    //mImageLabels.size()/10;
+    std::cout << "请输入训练样本个数，最少20个." << std::endl;
+    std::cin >> samplesNum;
+    if(samplesNum < 20)
+        samplesNum = 20;
+    else if(samplesNum > mImageLabels.size())
+        samplesNum = mImageLabels.size();
+    std::cout << "一共" << samplesNum << "个训练样本.\n" << std::endl;
+
+    std::cout << "是否以两眼距离标准归一化Landmarker坐标偏差?\n[Y/N?]" << std::endl;
+    std::string t;
+    std::cin >> t;
+    if(t=="Y" || t=="y")
+        isNormal = true;
+    else if(t=="N" || t=="n")
+        isNormal = false;
+    if(isNormal)
+        std::cout << "归一化坐标.\n" << std::endl;
+    else
+        std::cout << "不归一化坐标.\n" << std::endl;
+
+
+    cv::Mat current_shape(samplesNum, meanShape.cols, CV_32FC1);
+    cv::Mat target_shape(samplesNum, meanShape.cols, CV_32FC1);
+//        cv::namedWindow("Image", cv::WINDOW_NORMAL);
+    for(int i=0; i<samplesNum; i++){
+        for(int j=0; j<meanShape.cols; j++){
+            target_shape.at<float>(i, j)  = mImageLabels.at(i).landmarkPos[j];
+        }
+        cv::Mat Image = cv::imread(mImageLabels.at(i).imagePath, CV_LOAD_IMAGE_GRAYSCALE); //CV_LOAD_IMAGE_GRAYSCALE
+        cv::Rect faceBox(mImageLabels.at(i).faceBox[0],mImageLabels.at(i).faceBox[1],mImageLabels.at(i).faceBox[2],mImageLabels.at(i).faceBox[3]);
+        cv::Rect efaceBox = get_enclosing_bbox(target_shape.row(i));
+        cv::Rect mfaceBox = perturb(faceBox) & cv::Rect(0,0,Image.cols, Image.rows);
+        if((float)(efaceBox & faceBox).area()/faceBox.area()<0.4)
+            mfaceBox = perturb(efaceBox) & cv::Rect(0,0,Image.cols, Image.rows);
+        cv::Mat  align_shape = align_mean(meanShape, mfaceBox);
+        assert(align_shape.rows == 1);
+        for(int j=0; j<meanShape.cols; j++){
+            current_shape.at<float>(i, j) = align_shape.at<float>(j);
+        }
+
+//            int numLandmarks = meanShape.cols/2;
+//            for(int j=0; j<numLandmarks; j++){
+//                int x = current_shape.at<float>(i, j);
+//                int y = current_shape.at<float>(i, j + numLandmarks);
+//                cv::circle(Image, cv::Point(x, y), 5, cv::Scalar(255, 0, 0), -1);
+//                x = target_shape.at<float>(i, j);
+//                y = target_shape.at<float>(i, j + numLandmarks);
+//                cv::circle(Image, cv::Point(x, y), 3, cv::Scalar(0, 0, 255), -1);
+//            }
+//            cv::rectangle(Image,  faceBox, cv::Scalar(0, 255, 0), 1, 4);
+//            cv::rectangle(Image, mfaceBox, cv::Scalar(255, 0, 0), 3);
+//            cv::rectangle(Image, efaceBox, cv::Scalar(0, 0, 255), 1, 4);
+//            cv::imshow("Image", Image);
+//            std::cout << (float)(efaceBox & faceBox).area()/faceBox.area() << std::endl;
+//            if((float)(efaceBox & faceBox).area()/faceBox.area()<0.4)
+//                cv::waitKey(0);
+//            cv::waitKey(10);
+    }
+    float error0 = 0.0f;
+    int numLandmarks = target_shape.cols/2;
+    for(int i=0; i<samplesNum; i++){
+        cv::Mat shape = current_shape.row(i);
+        float lx = ( shape.at<float>(eyes_index.at(0))+shape.at<float>(eyes_index.at(1)) )*0.5;
+        float ly = ( shape.at<float>(eyes_index.at(0)+numLandmarks)+shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
+        float rx = ( shape.at<float>(eyes_index.at(2))+shape.at<float>(eyes_index.at(3)) )*0.5;
+        float ry = ( shape.at<float>(eyes_index.at(2)+numLandmarks)+shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
+        float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );//计算两眼的距离
+        for(int j=0; j<numLandmarks; j++){
+            float dx = target_shape.at<float>(i, j) - current_shape.at<float>(i, j);
+            float dy = target_shape.at<float>(i, j+numLandmarks) - current_shape.at<float>(i, j+numLandmarks);
+            error0 += sqrt(dx*dx + dy*dy)/distance;
+        }
+    }
+    error0 = error0/samplesNum/numLandmarks;
+    std::cout <<"初始误差为: " << error0 << "\n" << std::endl;
+
+
+    for(int i=0; i<LinearRegressors.size(); i++){
+        //开始计算描述子
+        int bins = 1;
+        for(int j=0; j<HoGParams.at(i).num_bins; j++)
+            bins = 2*bins;
+        cv::Mat HogDescriptors(samplesNum, (bins*HoGParams.at(i).num_cells*HoGParams.at(i).num_cells)*LandmarkIndexs.at(i).size()+1, CV_32FC1);
+        for(int j=0; j<samplesNum; j++){
+            cv::Mat grayImage = cv::imread(mImageLabels.at(j).imagePath, CV_LOAD_IMAGE_GRAYSCALE);
+            cv::Mat Descriptor = CalculateHogDescriptor(grayImage, current_shape.row(j), LandmarkIndexs.at(i), eyes_index, HoGParams.at(i));
+            assert(Descriptor.cols == HogDescriptors.cols);
+            for(int k=0; k<Descriptor.cols; k++){
+                HogDescriptors.at<float>(j, k) = Descriptor.at<float>(0,k);
+            }
+        }
+        //描述子计算完成，开始一次迭代
+        cv::Mat update_step = target_shape - current_shape;
+        int numLandmarks = update_step.cols/2;
+        if(isNormal){
+            for(int j=0; j<samplesNum; j++){
+                cv::Mat shape = current_shape.row(j);
+                float lx = ( shape.at<float>(eyes_index.at(0))+shape.at<float>(eyes_index.at(1)) )*0.5;
+                float ly = ( shape.at<float>(eyes_index.at(0)+numLandmarks)+shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
+                float rx = ( shape.at<float>(eyes_index.at(2))+shape.at<float>(eyes_index.at(3)) )*0.5;
+                float ry = ( shape.at<float>(eyes_index.at(2)+numLandmarks)+shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
+                float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );
+                update_step.row(j) = update_step.row(j)/distance;
+            }
+        }
+        LinearRegressors.at(i).learn(HogDescriptors, update_step);
+        update_step = LinearRegressors.at(i).predict(HogDescriptors);
+        if(isNormal){
+            for(int j=0; j<samplesNum; j++){
+                cv::Mat shape = current_shape.row(j);
+                float lx = ( shape.at<float>(eyes_index.at(0))+shape.at<float>(eyes_index.at(1)) )*0.5;
+                float ly = ( shape.at<float>(eyes_index.at(0)+numLandmarks)+shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
+                float rx = ( shape.at<float>(eyes_index.at(2))+shape.at<float>(eyes_index.at(3)) )*0.5;
+                float ry = ( shape.at<float>(eyes_index.at(2)+numLandmarks)+shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
+                float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );
+                update_step.row(j) = update_step.row(j)*distance;
+            }
+        }
+        current_shape = current_shape + update_step;
+        //一次迭代结束，更新梯度变化，计算误差
+
+        float error = 0.0f;
+        for(int i=0; i<samplesNum; i++){
+            cv::Mat shape = current_shape.row(i);
+            float lx = ( shape.at<float>(eyes_index.at(0))+shape.at<float>(eyes_index.at(1)) )*0.5;
+            float ly = ( shape.at<float>(eyes_index.at(0)+numLandmarks)+shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
+            float rx = ( shape.at<float>(eyes_index.at(2))+shape.at<float>(eyes_index.at(3)) )*0.5;
+            float ry = ( shape.at<float>(eyes_index.at(2)+numLandmarks)+shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
+            float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );//计算两眼的距离
+            for(int j=0; j<numLandmarks; j++){
+                float dx = target_shape.at<float>(i, j) - current_shape.at<float>(i, j);
+                float dy = target_shape.at<float>(i, j+numLandmarks) - current_shape.at<float>(i, j+numLandmarks);
+                error += sqrt(dx*dx + dy*dy)/distance;
+            }
+        }
+        error = error/samplesNum/numLandmarks;
+        std::cout << "现在平均误差是: " << error << "\n" << std::endl;
+    }
+}
+
 
 
 cv::Mat ldmarkmodel::predict(const cv::Mat& src){
@@ -586,12 +801,12 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
         cv::Mat update_step = LinearRegressors.at(i).predict(Descriptor);
         //FACE_TRACE("face update_step:%d", i);
         if(isNormal){ // true 
-            float lx = ( current_shape.at<float>(eyes_index.at(0))+current_shape.at<float>(eyes_index.at(1)) )*0.5;
-            float ly = ( current_shape.at<float>(eyes_index.at(0)+numLandmarks)+current_shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
-            float rx = ( current_shape.at<float>(eyes_index.at(2))+current_shape.at<float>(eyes_index.at(3)) )*0.5;
-            float ry = ( current_shape.at<float>(eyes_index.at(2)+numLandmarks)+current_shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
+            float lx = (   current_shape.at<float>(eyes_index.at(0))                +   current_shape.at<float>(eyes_index.at(1))                )*0.5;
+            float ly = (   current_shape.at<float>(eyes_index.at(0)+numLandmarks)   +   current_shape.at<float>(eyes_index.at(1)+numLandmarks)   )*0.5;
+            float rx = (   current_shape.at<float>(eyes_index.at(2))                +   current_shape.at<float>(eyes_index.at(3))                )*0.5;
+            float ry = (   current_shape.at<float>(eyes_index.at(2)+numLandmarks)   +   current_shape.at<float>(eyes_index.at(3)+numLandmarks)   )*0.5;
             float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );
-            update_step = update_step*distance;
+            update_step =  update_step * distance;
         }
         current_shape = current_shape + update_step;
     }
@@ -600,12 +815,12 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
 
 void ldmarkmodel::printmodel(){
     if(isNormal)
-        std::cout << "isNormal" << std::endl;
+        std::cout << "以两眼距离归一化步长" << std::endl;
     else
-        std::cout << "isNormal not " << std::endl;
-    std::cout << "LinearRegressors size   " << LinearRegressors.size() << " " << std::endl;
+        std::cout << "不归一化步长" << std::endl;
+    std::cout << "一共" << LinearRegressors.size() << "次迭代回归..." << std::endl;
     for(int i=0; i<LandmarkIndexs.size(); i++){
-        std::cout <<"LandmarkIndexs index ["<<i<<"]: size "<<LandmarkIndexs.at(i).size()<<" ";
+        std::cout <<"第"<<i<<"次回归: "<<LandmarkIndexs.at(i).size()<<"个点  ";
         std::cout << "num_cells:"<<HoGParams.at(i).num_cells<<"  cell_size:"<<HoGParams.at(i).cell_size <<"  num_bins:"<<HoGParams.at(i).num_bins<<"  relative_patch_size:"<<HoGParams.at(i).relative_patch_size<<std::endl;
     }
 }
@@ -638,7 +853,7 @@ void ldmarkmodel::convert(std::vector<int> &full_eyes_Indexs){
         if(flag)
             tar_LandmarkIndex.push_back(t);
     }
-    //����ת��meanShape
+    //更新转换meanShape
     cv::Mat tmp = meanShape.clone();
     meanShape.release();
     meanShape.create(1, tar_LandmarkIndex.size()*2, tmp.type());
@@ -646,8 +861,7 @@ void ldmarkmodel::convert(std::vector<int> &full_eyes_Indexs){
         meanShape.at<float>(i) = tmp.at<float>(tar_LandmarkIndex.at(i));
         meanShape.at<float>(i+tar_LandmarkIndex.size()) = tmp.at<float>(tar_LandmarkIndex.at(i)+tmp.cols/2);
     }
-    
-
+    //更新转换LandmarkIndexs
     for(int i=0; i<LinearRegressors.size(); i++){
         for(int j=0; j<LandmarkIndexs.at(i).size(); j++){
             for(int k=0; k<tar_LandmarkIndex.size(); k++){
@@ -658,7 +872,7 @@ void ldmarkmodel::convert(std::vector<int> &full_eyes_Indexs){
             }
         }
     }
-    
+    //更新转换eyes_index
     for(int i=0; i<eyes_index.size(); i++){
         bool flag = false;
         for(int j=0; i<tar_LandmarkIndex.size(); j++){
@@ -670,7 +884,7 @@ void ldmarkmodel::convert(std::vector<int> &full_eyes_Indexs){
         }
         assert(flag);
     }
-    //����ת��LinearRegressors
+    //更新转换LinearRegressors
     for(int i=0; i<LinearRegressors.size(); i++){
         LinearRegressors.at(i).convert(tar_LandmarkIndex);
     }
@@ -846,7 +1060,7 @@ void ldmarkmodel::drawPose(cv::Mat& img, const cv::Mat& current_shape, float lin
 //        Yaw	  = eav[1];
 //        Roll  = eav[2];
 }
-//����ģ��
+//加载模型
 bool load_ldmarkmodel(std::string filename, ldmarkmodel &model)
 {
     std::ifstream file(filename, std::ios::binary);
@@ -858,7 +1072,7 @@ bool load_ldmarkmodel(std::string filename, ldmarkmodel &model)
     return true;
 }
 
-//����ģ��
+//保存模型
 void save_ldmarkmodel(ldmarkmodel model, std::string filename)
 {
     std::ofstream file(filename, std::ios::binary);
