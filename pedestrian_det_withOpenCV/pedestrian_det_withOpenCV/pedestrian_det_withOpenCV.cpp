@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+// copy from dlib-android	jni_pedestrian_det.cpp 
 class OpencvHOGDetctor {
 public:
 	OpencvHOGDetctor() {}
@@ -61,6 +62,7 @@ int main()
 {
 	OpencvHOGDetctor detor;
 	cv::Mat src_img = cv::imread("pets.jpg" , CV_LOAD_IMAGE_COLOR /*==1 */);
+	// cv::cvtColor(rgbaMat, bgrMat, cv::COLOR_RGBA2BGR); dlib-android中图片解码后是RGBA 所以还需要转成BGR
 	if (src_img.empty()) {
 		std::cout << "find not exists " << std::endl;
 		system("pause");
