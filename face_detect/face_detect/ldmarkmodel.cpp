@@ -331,7 +331,7 @@ LinearRegressor::LinearRegressor() : weights(),meanvalue(),x(),isPCA(false)
 {
 
 }
-
+#if 0
 bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
 {
     this->isPCA = isPCA;
@@ -391,6 +391,7 @@ bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
     }
     return true; // see todo above
 }
+#endif 
 
 double LinearRegressor::test(cv::Mat data, cv::Mat labels)
 {
@@ -509,6 +510,7 @@ void ldmarkmodel::loadFaceDetModelFile(std::string filePath){
     assert( !face_cascade.empty() )  ;
 }
 
+#if 0 
 void ldmarkmodel::train(std::vector<ImageLabel> &mImageLabels){
     assert(HoGParams.size() >= LinearRegressors.size());
     int samplesNum = 800;    //mImageLabels.size()/10;
@@ -652,7 +654,7 @@ void ldmarkmodel::train(std::vector<ImageLabel> &mImageLabels){
     }
 }
 
-
+#endif 
 
 cv::Mat ldmarkmodel::predict(const cv::Mat& src){
     cv::Mat grayImage;
@@ -797,6 +799,14 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
     for(int i=0; i<LinearRegressors.size(); i++){
         //FACE_TRACE("face CalculateHogDescriptor:%d", i);
         cv::Mat Descriptor = CalculateHogDescriptor(grayImage, current_shape, LandmarkIndexs.at(i), eyes_index, HoGParams.at(i));
+		// 1*3073 1*3073 1*3073  1*5121 1*5121 
+		/*						num_cells	cell_size	num_bins	relative_path_size 
+			HoGParams	[0]		4			11			4			0.8999
+								4			10			4			0.6999
+								4			9			4			0.4499
+								4			8			4			0.3000
+								4			6			4			0.2000
+		*/
         //FACE_TRACE("face predict:%d", i);
         cv::Mat update_step = LinearRegressors.at(i).predict(Descriptor);
         //FACE_TRACE("face update_step:%d", i);
@@ -814,6 +824,7 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
 }
 
 void ldmarkmodel::printmodel(){
+#if 0 
     if(isNormal)
         std::cout << "以两眼距离归一化步长" << std::endl;
     else
@@ -823,6 +834,7 @@ void ldmarkmodel::printmodel(){
         std::cout <<"第"<<i<<"次回归: "<<LandmarkIndexs.at(i).size()<<"个点  ";
         std::cout << "num_cells:"<<HoGParams.at(i).num_cells<<"  cell_size:"<<HoGParams.at(i).cell_size <<"  num_bins:"<<HoGParams.at(i).num_bins<<"  relative_patch_size:"<<HoGParams.at(i).relative_patch_size<<std::endl;
     }
+#endif 
 }
 
 void ldmarkmodel::convert(std::vector<int> &full_eyes_Indexs){

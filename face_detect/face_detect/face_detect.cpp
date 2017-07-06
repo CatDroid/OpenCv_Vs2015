@@ -77,10 +77,13 @@ int main()
 					color );
 	}
 
-	cv::imshow("特征点",image);
+ 
+	cv::imshow("feature",image);
 	cv::waitKey();
 
 	//system("pause");
+
+	
 
     return 0;
 }
