@@ -6,24 +6,24 @@ using namespace cv;
 // HOGDescriptor visual_imagealizer
 // adapted for arbitrary size of feature sets and training images
 Mat get_hogdescriptor_visual_image(Mat& origImg,
-	vector<float>& descriptorValues,//hogÌØÕ÷ÏòÁ¿
-	Size winSize,//Í¼Æ¬´°¿Ú´óĞ¡
+	vector<float>& descriptorValues,//hogç‰¹å¾å‘é‡
+	Size winSize,//å›¾ç‰‡çª—å£å¤§å°
 	Size cellSize,             
-	int scaleFactor,//Ëõ·Å±³¾°Í¼ÏñµÄ±ÈÀı
-	double viz_factor)//Ëõ·ÅhogÌØÕ÷µÄÏß³¤±ÈÀı
+	int scaleFactor,//ç¼©æ”¾èƒŒæ™¯å›¾åƒçš„æ¯”ä¾‹
+	double viz_factor)//ç¼©æ”¾hogç‰¹å¾çš„çº¿é•¿æ¯”ä¾‹
 {   
-	Mat visual_image;//×îºó¿ÉÊÓ»¯µÄÍ¼Ïñ´óĞ¡
+	Mat visual_image;//æœ€åå¯è§†åŒ–çš„å›¾åƒå¤§å°
 	resize(origImg, visual_image, Size(origImg.cols*scaleFactor, origImg.rows*scaleFactor));
 
 	int gradientBinSize = 9;
-	// dividing 180¡ã into 9 bins, how large (in rad) is one bin?
-	float radRangeForOneBin = 3.14/(float)gradientBinSize; //pi=3.14¶ÔÓ¦180¡ã
+	// dividing 180Â° into 9 bins, how large (in rad) is one bin?
+	float radRangeForOneBin = 3.14/(float)gradientBinSize; //pi=3.14å¯¹åº”180Â°
 
 	// prepare data structure: 9 orientation / gradient strenghts for each cell
-	int cells_in_x_dir = winSize.width / cellSize.width;//x·½ÏòÉÏµÄcell¸öÊı
-	int cells_in_y_dir = winSize.height / cellSize.height;//y·½ÏòÉÏµÄcell¸öÊı
-	int totalnrofcells = cells_in_x_dir * cells_in_y_dir;//cellµÄ×Ü¸öÊı
-	//×¢Òâ´Ë´¦ÈıÎ¬Êı×éµÄ¶¨Òå¸ñÊ½
+	int cells_in_x_dir = winSize.width / cellSize.width;//xæ–¹å‘ä¸Šçš„cellä¸ªæ•°
+	int cells_in_y_dir = winSize.height / cellSize.height;//yæ–¹å‘ä¸Šçš„cellä¸ªæ•°
+	int totalnrofcells = cells_in_x_dir * cells_in_y_dir;//cellçš„æ€»ä¸ªæ•°
+	//æ³¨æ„æ­¤å¤„ä¸‰ç»´æ•°ç»„çš„å®šä¹‰æ ¼å¼
 	//int ***b;
 	//int a[2][3][4];
 	//int (*b)[3][4] = a;
@@ -40,13 +40,13 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 			cellUpdateCounter[y][x] = 0;
 
 			for (int bin=0; bin<gradientBinSize; bin++)
-				gradientStrengths[y][x][bin] = 0.0;//°ÑÃ¿¸öcellµÄ9¸öbin¶ÔÓ¦µÄÌİ¶ÈÇ¿¶È¶¼³õÊ¼»¯Îª0
+				gradientStrengths[y][x][bin] = 0.0;//æŠŠæ¯ä¸ªcellçš„9ä¸ªbinå¯¹åº”çš„æ¢¯åº¦å¼ºåº¦éƒ½åˆå§‹åŒ–ä¸º0
 		}
 	}
 
 	// nr of blocks = nr of cells - 1
 	// since there is a new block on each cell (overlapping blocks!) but the last one
-	//Ïàµ±ÓÚblockstride = (8,8)
+	//ç›¸å½“äºblockstride = (8,8)
 	int blocks_in_x_dir = cells_in_x_dir - 1;
 	int blocks_in_y_dir = cells_in_y_dir - 1;
 
@@ -78,7 +78,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 					float gradientStrength = descriptorValues[ descriptorDataIdx ];
 					descriptorDataIdx++;
 
-					gradientStrengths[celly][cellx][bin] += gradientStrength;//ÒòÎªCÊÇ°´ĞĞ´æ´¢
+					gradientStrengths[celly][cellx][bin] += gradientStrength;//å› ä¸ºCæ˜¯æŒ‰è¡Œå­˜å‚¨
 
 				} // for (all bins)
 
@@ -86,7 +86,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 				// note: overlapping blocks lead to multiple updates of this sum!
 				// we therefore keep track how often a cell was updated,
 				// to compute average gradient strengths
-				cellUpdateCounter[celly][cellx]++;//ÓÉÓÚblockÖ®¼äÓĞÖØµş£¬ËùÒÔÒª¼ÇÂ¼ÄÄĞ©cell±»¶à´Î¼ÆËãÁË
+				cellUpdateCounter[celly][cellx]++;//ç”±äºblockä¹‹é—´æœ‰é‡å ï¼Œæ‰€ä»¥è¦è®°å½•å“ªäº›cellè¢«å¤šæ¬¡è®¡ç®—äº†
 
 			} // for (all cells)
 
@@ -115,7 +115,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 	cout << "winSize = " << winSize << endl;
 	cout << "cellSize = " << cellSize << endl;
 	cout << "blockSize = " << cellSize*2<< endl;
-	cout << "blockNum = " << blocks_in_x_dir<<"¡Á"<<blocks_in_y_dir << endl;
+	cout << "blockNum = " << blocks_in_x_dir<<"Ã—"<<blocks_in_y_dir << endl;
 	cout << "descriptorDataIdx = " << descriptorDataIdx << endl;
 
 	// draw cells
@@ -133,7 +133,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 				Point(drawX*scaleFactor,drawY*scaleFactor),
 				Point((drawX+cellSize.width)*scaleFactor,
 				(drawY+cellSize.height)*scaleFactor),
-				CV_RGB(0,0,0),//cell¿òÏßµÄÑÕÉ«
+				CV_RGB(0,0,0),//cellæ¡†çº¿çš„é¢œè‰²
 				1);
 
 			// draw in each cell all 9 gradient strengths
@@ -145,7 +145,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 				if (currentGradStrength==0)
 					continue;
 
-				float currRad = bin * radRangeForOneBin + radRangeForOneBin/2;//È¡Ã¿¸öbinÀïµÄÖĞ¼äÖµ£¬Èç10¡ã,30¡ã,...,170¡ã.
+				float currRad = bin * radRangeForOneBin + radRangeForOneBin/2;//å–æ¯ä¸ªbiné‡Œçš„ä¸­é—´å€¼ï¼Œå¦‚10Â°,30Â°,...,170Â°.
 
 				float dirVecX = cos( currRad );
 				float dirVecY = sin( currRad );
@@ -163,7 +163,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 				line(visual_image,
 					Point(x1*scaleFactor,y1*scaleFactor),
 					Point(x2*scaleFactor,y2*scaleFactor),
-					CV_RGB(255,255,255),//HOG¿ÉÊÓ»¯µÄcellµÄÑÕÉ«
+					CV_RGB(255,255,255),//HOGå¯è§†åŒ–çš„cellçš„é¢œè‰²
 					1);
 
 			} // for (all bins)
@@ -185,7 +185,7 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 	delete[] gradientStrengths;
 	delete[] cellUpdateCounter;
 
-	return visual_image;//·µ»Ø×îÖÕµÄHOG¿ÉÊÓ»¯Í¼Ïñ
+	return visual_image;//è¿”å›æœ€ç»ˆçš„HOGå¯è§†åŒ–å›¾åƒ
 
 }
 
@@ -193,24 +193,24 @@ Mat get_hogdescriptor_visual_image(Mat& origImg,
 int main()
 {
 	
-	HOGDescriptor hog;//Ê¹ÓÃµÄÊÇÄ¬ÈÏµÄhog²ÎÊı
+	HOGDescriptor hog;//ä½¿ç”¨çš„æ˜¯é»˜è®¤çš„hogå‚æ•°
 	/*
 	HOGDescriptor(Size win_size=Size(64, 128), Size block_size=Size(16, 16), Size block_stride=Size(8, 8), 
 	Size cell_size=Size(8, 8), int nbins=9, double win_sigma=DEFAULT_WIN_SIGMA(DEFAULT_WIN_SIGMA=-1), 
 	double threshold_L2hys=0.2, bool gamma_correction=true, int nlevels=DEFAULT_NLEVELS)
 
 	Parameters:	
-	win_size ¨C Detection window size. Align to block size and block stride.
-	block_size ¨C Block size in pixels. Align to cell size. Only (16,16) is supported for now.
-	block_stride ¨C Block stride. It must be a multiple of cell size.
-	cell_size ¨C Cell size. Only (8, 8) is supported for now.
-	nbins ¨C Number of bins. Only 9 bins per cell are supported for now.
-	win_sigma ¨C Gaussian smoothing window parameter.
-	threshold_L2hys ¨C L2-Hys normalization method shrinkage.
-	gamma_correction ¨C Flag to specify whether the gamma correction preprocessing is required or not.
-	nlevels ¨C Maximum number of detection window increases.
+	win_size â€“ Detection window size. Align to block size and block stride.
+	block_size â€“ Block size in pixels. Align to cell size. Only (16,16) is supported for now.
+	block_stride â€“ Block stride. It must be a multiple of cell size.
+	cell_size â€“ Cell size. Only (8, 8) is supported for now.
+	nbins â€“ Number of bins. Only 9 bins per cell are supported for now.
+	win_sigma â€“ Gaussian smoothing window parameter.
+	threshold_L2hys â€“ L2-Hys normalization method shrinkage.
+	gamma_correction â€“ Flag to specify whether the gamma correction preprocessing is required or not.
+	nlevels â€“ Maximum number of detection window increases.
 	*/
-	// ¶ÔÓÚ 128*80 µÄÍ¼Æ¬£¬blockstride = 8, 15*9 µÄ block£¬  9*15 * 2*2 *9 = 4860
+	// å¯¹äº 128*80 çš„å›¾ç‰‡ï¼Œblockstride = 8, 15*9 çš„ blockï¼Œ  9*15 * 2*2 *9 = 4860
 	//			block_x_num = ( 128 - 16 ) / 8 + 1 =  15 
 	//			block_y_num = ( 80  - 16 ) / 8 + 1 =  9 
 	//			
@@ -218,13 +218,15 @@ int main()
 	int width = 80;
 	int height = 128;
 	hog.winSize=Size(width,height);
-	vector<float> des;//HOGÌØÕ÷ÏòÁ¿
+	vector<float> des;//HOGç‰¹å¾å‘é‡
 	Mat src = imread("objimg.jpg");
 	Mat dst ;
-	resize(src,dst,Size(width,height));//¹æ·¶Í¼Ïñ³ß´ç
+	resize(src,dst,Size(width,height));//è§„èŒƒå›¾åƒå°ºå¯¸
 	imshow("src",src);
-	hog.compute(dst,des);//¼ÆËãhogÌØÕ÷
-	Mat background = Mat::zeros(Size(width,height),CV_8UC1);//ÉèÖÃºÚÉ«±³¾°Í¼£¬ÒòÎªÒªÓÃ°×É«»æÖÆhogÌØÕ÷
+	hog.compute(dst,des);//è®¡ç®—hogç‰¹å¾
+	Mat background = Mat::zeros(Size(width,height),CV_8UC1);//è®¾ç½®é»‘è‰²èƒŒæ™¯å›¾ï¼Œå› ä¸ºè¦ç”¨ç™½è‰²ç»˜åˆ¶hogç‰¹å¾
+
+
 
 	Mat d = get_hogdescriptor_visual_image(background,des,hog.winSize,hog.cellSize,3,2.5);
 	imshow("dst",d);
