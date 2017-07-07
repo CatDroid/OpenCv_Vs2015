@@ -338,8 +338,8 @@ bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
     if(this->isPCA){
         cv::Mat mdata = data.colRange(0, data.cols-2).clone();
         cv::PCA FeaturePCA(mdata, cv::Mat(), CV_PCA_DATA_AS_ROW);
-        std::cout << "特征向量尺度: " <<FeaturePCA.eigenvectors.size() << std::endl;
-        std::cout << "特征值尺度:   " <<FeaturePCA.eigenvalues.size() << std::endl;
+        //std::cout << "特征向量尺度: " <<FeaturePCA.eigenvectors.size() << std::endl;
+        //std::cout << "特征值尺度:   " <<FeaturePCA.eigenvalues.size() << std::endl;
         double eigensum = cv::sum(FeaturePCA.eigenvalues)[0];
         double lamda = 0.0;
         int index = 0;
@@ -347,7 +347,7 @@ bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
             lamda += FeaturePCA.eigenvalues.at<float>(i,0);
             if(lamda/eigensum > 0.97){
                 index = i;
-                std::cout << "特征个数可以压缩为:" << i << "个" << std::endl;
+                //std::cout << "特征个数可以压缩为:" << i << "个" << std::endl;
                 break;
             }
         }
@@ -366,28 +366,48 @@ bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
         A.col(A.cols-1) = cv::Mat::ones(A.rows, 1, A.type());
         mdata.release();
         //自己的写的最小二乘
-        cv::Mat AT = A.t();
-        cv::Mat ATA = A.t()*A;
-        float lambda = 1.50f * static_cast<float>(cv::norm(ATA)) / static_cast<float>(A.rows);
-        cv::Mat regulariser = cv::Mat::eye(ATA.size(), ATA.type())*lambda;
+        cv::Mat at = A.t();
+        cv::Mat ata = A.t()*A;
+        float lambda = 1.50f * static_cast<float>(cv::norm(ata)) / static_cast<float>(A.rows);
+        cv::Mat regulariser = cv::Mat::eye(ata.size(), ata.type())*lambda;
         regulariser.at<float>(regulariser.rows-1, regulariser.cols-1) = 0.0f;
-        this->x = (ATA + regulariser).inv(cv::DECOMP_LU)*AT*labels;
+        this->x = (ata + regulariser).inv(cv::DECOMP_LU)*at*labels;
         //opencv提供的最小二乘
         //cv::solve(A, labels, this->x);
-
 //            this->weights = this->eigenvectors*this->x;
 //            this->eigenvectors.release();
     }else{
-        cv::Mat A = data.clone();
+        cv::Mat a = data.clone();
         //自己的写的最小二乘
-        cv::Mat AT = A.t();
-        cv::Mat ATA = A.t()*A;
-        float lambda = 1.50f * static_cast<float>(cv::norm(ATA)) / static_cast<float>(A.rows);
-        cv::Mat regulariser = cv::Mat::eye(ATA.size(), ATA.type())*lambda;
+        cv::Mat at = a.t(); // Transposes  转置矩阵   inverse matrix 逆矩阵
+        cv::Mat ata = a.t()*a;
+        float lambda = 1.50f * static_cast<float>(cv::norm(ata)) / static_cast<float>(a.rows);
+		//  cv::Mat::eye 返回单位矩阵 of the specified size and type. 
+        cv::Mat regulariser =  cv::Mat::eye(ata.size(), ata.type()) * lambda;
         regulariser.at<float>(regulariser.rows-1, regulariser.cols-1) = 0.0f;
-        this->weights = (ATA + regulariser).inv(cv::DECOMP_LU)*AT*labels;
+        this->weights = (ata + regulariser).inv(cv::DECOMP_LU) * at * labels;
+		// OpenCV3.0中实现矩阵求逆有四种方法（LU、cholesky、eig以及SVD）
+		// DECOMP_CHOLESKY 是 Cholesky LLT只适用于对称正矩阵的分解。该类型在处理大的矩阵时的速度是LU的两倍左右
+		// DECOMP_SVD是 SVD 分解
+		// 在线性代数中，LU分解是矩阵分解的一种，可以将一个矩阵分解为一个下三角矩阵和一个上三角矩阵的乘积
+
+		// http://www.jianshu.com/p/7c4fda4f1498 矩阵可逆的情况下 最小二乘的解析解
+		// w = (X.t * X ).inv * X.t * y
+		// 目标函数  X * w - y  --> 0   X和y是训练数据
+
         //opencv提供的最小二乘
         //cv::solve(A, labels, this->weights);
+		//
+ 
+		/*
+			cv::solve 解决线性系统或者最小二乘问题
+		    cv::solve (Ma, Mb, Mx, CV_LU );  solve (ax=b) for x
+
+			CV_LU		- 最佳主元选取的高斯消除法
+			CV_SVD		- 奇异值分解法 (SVD)
+			CV_SVD_SYM	- 对正定对称矩阵的 SVD 方法
+
+			*/
     }
     return true; // see todo above
 }
@@ -434,7 +454,7 @@ cv::Mat LinearRegressor::predict(cv::Mat values)
         }
     }else{
         assert(values.cols==this->weights.rows);
-        return  values*this->weights;
+        return  values*this->weights; // X * w 
     }
 }
 
