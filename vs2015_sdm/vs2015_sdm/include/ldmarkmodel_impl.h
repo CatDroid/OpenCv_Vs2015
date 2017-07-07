@@ -8,7 +8,7 @@ LinearRegressor::LinearRegressor() : weights(),meanvalue(),x(),isPCA(false)
 
 }
 
-bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
+bool LinearRegressor::learn(cv::Mat &data /* HOG描述子 */, cv::Mat &labels /* update_step  face_shape */, bool isPCA)
 {
     this->isPCA = isPCA;
     if(this->isPCA){
@@ -56,19 +56,21 @@ bool LinearRegressor::learn(cv::Mat &data, cv::Mat &labels, bool isPCA)
     }else{
         cv::Mat A = data.clone();
         //自己的写的最小二乘
-        cv::Mat AT = A.t(); // Transposes  转置矩阵   inverse matrix 逆矩阵
+        cv::Mat AT = A.t(); // Transposes  转置矩阵   inverse matrix 逆矩阵 
         cv::Mat ATA = A.t()*A;
-        float lambda = 1.50f * static_cast<float>( cv::norm(ATA) /*NORM_L2*/ ) / static_cast<float>( A.rows ); 
+        float lambda = 1.50f * static_cast<float>( cv::norm(ATA) /*NORM_L2*/ ) / static_cast<float>( A.rows );  
+		// 岭回归的参数 lambda   = 1.5* HOG的平均每行的值  ?? 
 		// L2 正则化 
-		// 收缩方式(Shrinkage method)，又称为正则化(Regularization)。主要包括岭回归(Ridge Regression) 和 lasso回归(Least Absolute Shrinkage and Selection Operator)
+		// 收缩方式(Shrinkage method) 又称为正则化(Regularization) 主要包括岭回归(Ridge Regression) 和 lasso回归(Least Absolute Shrinkage and Selection Operator)
+		// lambda 岭迹图
 
-		// cv::Mat::eye 返回单位矩阵 of the specified size and type. 
+		// cv::Mat::eye 返回单位矩阵 of the specified size and type. 单位矩阵可以不是 行=列  
         cv::Mat regulariser = cv::Mat::eye(ATA.size(), ATA.type())*lambda; //lambda = 希腊字母λ
         regulariser.at<float>(regulariser.rows-1, regulariser.cols-1) = 0.0f;
         this->weights = (ATA + regulariser).inv(cv::DECOMP_LU)*AT*labels;
 
-		// cost function 损失函数 代价函数 
-		// 线性回归 最小二乘  矩阵可逆的情况下,最小二乘的解析解
+		// cost function 损失函数 代价函数  
+		// 线性回归 最小二乘  矩阵可逆的情况下,最小二乘的解析解 
 		// http://www.jianshu.com/p/7c4fda4f1498
 		// w = (X.t * X ).inv * X.t * y
 		// 目标函数  X * w - y  --> 0   X和y是训练数据   y就是labels
@@ -114,7 +116,7 @@ double LinearRegressor::test(cv::Mat data, cv::Mat labels)
 }
 
 
-cv::Mat LinearRegressor::predict(cv::Mat values)
+cv::Mat LinearRegressor::predict(cv::Mat values /* HOG */)
 {
     if(this->isPCA){
         cv::Mat mdata = values.colRange(0, values.cols-2).clone();
@@ -145,7 +147,9 @@ cv::Mat LinearRegressor::predict(cv::Mat values)
     }else{
         assert(values.cols==this->weights.rows);
 		return  values*this->weights; // y =  X*w 
-		// 1*3073   1*3073   1*3073   1*5121   1*5121 
+		// HOG values : 1*3073   1*3073   1*3073   1*5121   1*5121 
+		// weights    : 3073*136                    5121 *136
+		// LinearRegressors有5个 每个LinearRegressors实例里面的weights都不一样
     }
 }
 
@@ -513,12 +517,18 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
 								4			6			4			0.2000
 		*/
         cv::Mat update_step = LinearRegressors.at(i).predict(Descriptor); // 1*136
+
+		//for (int i = 0; i < update_step.cols ; i++) {
+		//	std::cout << update_step.at<float>(i) << " ";
+		//}
+		//std::cout << std::endl;
+
         if(isNormal){ // true 
             float lx = ( current_shape.at<float>(eyes_index.at(0))+current_shape.at<float>(eyes_index.at(1)) )*0.5;
             float ly = ( current_shape.at<float>(eyes_index.at(0)+numLandmarks)+current_shape.at<float>(eyes_index.at(1)+numLandmarks) )*0.5;
             float rx = ( current_shape.at<float>(eyes_index.at(2))+current_shape.at<float>(eyes_index.at(3)) )*0.5;
             float ry = ( current_shape.at<float>(eyes_index.at(2)+numLandmarks)+current_shape.at<float>(eyes_index.at(3)+numLandmarks) )*0.5;
-            float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) );
+            float distance = sqrt( (rx-lx)*(rx-lx)+(ry-ly)*(ry-ly) ); // 计算上一次调整后 两眼的距离
             update_step = update_step*distance;
         }
         current_shape = current_shape + update_step;
