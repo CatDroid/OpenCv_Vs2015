@@ -24,8 +24,8 @@ public:
 		hog.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 		std::vector<cv::Rect> found, found_filtered;
 		std::cout << "Default Hog Descriptor Size  " << hog.getDescriptorSize() << std::endl;
-		cv::Mat feature;
-		hog.compute(src_img , &feature);
+		std::vector<float>  feature;
+		hog.compute(src_img , feature);
 		hog.detectMultiScale(src_img, found, 0, cv::Size(8, 8), cv::Size(32, 32)  ,1.05, 2);
 		std::cout << "After Hog Descriptor Size  " << hog.getDescriptorSize() << std::endl; // 3780
 		// double hit_threshold		程序内部计算为行人目标的阈值，也就是检测到的特征到SVM分类超平面的距离 
@@ -36,7 +36,7 @@ public:
 		/*
 			HOG，是目前计算机视觉、模式识别领域很常用的一种描述图像'局部纹理的特征'
 
-			winSize(64,128),blockSize(16,16),blockStride(8,8)步进,cellSize(8,8)
+			winSize(64,128),blockSize(16,16) 单位像素 ,blockStride(8,8)步进,cellSize(8,8) 即一个block有两个cell
 			窗口大小64x128,块大小16x16，块步长8x8，那么窗口中块的数目是(（64-16）/8+1)*((128-16)/8+1) = 7*15 =105个块，
 			块大小为16x16,胞元大小为8x8，那么一个块中的胞元cell数目是 (16/8)*(16/8) = 4个胞元
 
@@ -90,7 +90,7 @@ private:
 int main()
 {
 	OpencvHOGDetctor detor;
-	cv::Mat src_img = cv::imread("pets.jpg" , CV_LOAD_IMAGE_COLOR /*==1 */);
+	cv::Mat src_img = cv::imread("pedestrians.jpg" , CV_LOAD_IMAGE_COLOR /*==1 */);
 	// cv::cvtColor(rgbaMat, bgrMat, cv::COLOR_RGBA2BGR); dlib-android中图片解码后是RGBA 所以还需要转成BGR
 	if (src_img.empty()) {
 		std::cout << "find not exists " << std::endl;
