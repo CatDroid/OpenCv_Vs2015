@@ -432,7 +432,7 @@ cv::Mat ldmarkmodel::predict(const cv::Mat& src){
     return current_shape;
 }
 
-
+#include <windows.h>  
 
 int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFace){
     cv::Mat grayImage;
@@ -454,6 +454,7 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
     }else{
         faceBox = cv::Rect(0,0,0,0);
     }
+
     int error_code = SDM_NO_ERROR;
     cv::Rect mfaceBox = faceBox & cv::Rect(0, 0, grayImage.cols, grayImage.rows);
     float ratio = ((float)faceBox.width)/faceBox.height;
@@ -471,6 +472,11 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
 //        }
 //        error_code = SDM_ERROR_FACEDET;
 //    }
+
+	SYSTEMTIME oldsys;
+	SYSTEMTIME sys;
+	GetLocalTime(&oldsys);
+
 	printf("detectMultiScale start...  isDetFace %d  area %d \n" ,isDetFace ,  faceBox.area() );
     if(isDetFace || faceBox.area()<100){
         std::vector<cv::Rect> mFaceRects;
@@ -493,8 +499,13 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
                 faceBox = mFaceRects[i];
         }
         error_code = SDM_ERROR_FACEDET;
-    }
+    }// 60ms @ 512x512 
+	
 	printf("choose face area:x:%d y:%d w:%d h %d \n", faceBox.x, faceBox.y, faceBox.height, faceBox.width);
+
+	GetLocalTime(&sys);
+	printf("detectMultiScale cost %d \n" , (sys.wMilliseconds - oldsys.wMilliseconds ) );
+	oldsys = sys; 
     // faceBox 把人脸框出来
 
 
@@ -532,7 +543,11 @@ int ldmarkmodel::track(const cv::Mat& src, cv::Mat& current_shape, bool isDetFac
             update_step = update_step*distance;
         }
         current_shape = current_shape + update_step;
-    }
+    } // 35ms  @ 512x512 
+
+	GetLocalTime(&sys);
+	printf("CalculateHogDescriptor LinearRegressors cost %d ", (sys.wMilliseconds - oldsys.wMilliseconds));
+
     return error_code;
 }
 
