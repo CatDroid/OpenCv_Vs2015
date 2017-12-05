@@ -1,4 +1,4 @@
-// Viola_Jones.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+ï»¿// Viola_Jones.cpp : å®šä¹‰æ§åˆ¶å°åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 
 #include "stdafx.h"
@@ -18,42 +18,47 @@ using namespace cv;
 //string face_cascade_name = "lbpcascade_frontalface.xml";
  string face_cascade_name = "haarcascade_frontalface_alt.xml";
 
-//¸ÃÎÄ¼ş´æÔÚÓÚOpenCV°²×°Ä¿Â¼ÏÂµÄ\sources\data\haarcascadesÄÚ£¬ĞèÒª½«¸ÃxmlÎÄ¼ş¸´ÖÆµ½µ±Ç°¹¤³ÌÄ¿Â¼ÏÂ  
+//è¯¥æ–‡ä»¶å­˜åœ¨äºOpenCVå®‰è£…ç›®å½•ä¸‹çš„\sources\data\haarcascadeså†…ï¼Œéœ€è¦å°†è¯¥xmlæ–‡ä»¶å¤åˆ¶åˆ°å½“å‰å·¥ç¨‹ç›®å½•ä¸‹  
 CascadeClassifier face_cascade;
 void detectAndDisplay(Mat frame);
 
 /*
-OpenCVÓÃÓÚÈËÁ³¼ì²â
+OpenCVç”¨äºäººè„¸æ£€æµ‹
 
-Ê¹ÓÃOpenCV½øĞĞÈËÁ³¼ì²â£¨Viola-JonesÈËÁ³¼ì²â·½·¨£©
+ä½¿ç”¨OpenCVè¿›è¡Œäººè„¸æ£€æµ‹ï¼ˆViola-Jonesäººè„¸æ£€æµ‹æ–¹æ³•ï¼‰
 
-HaarÌØÕ÷·ÖÎªÈıÀà£º±ßÔµÌØÕ÷£¬ÏßĞÔÌØÕ÷£¬ÖĞĞÄÌØÕ÷ºÍ¶Ô½ÇÏßÌØÕ÷£¬×éºÏ³ÉÌØÕ÷Ä£°å¡£
+Haarç‰¹å¾åˆ†ä¸ºä¸‰ç±»ï¼šè¾¹ç¼˜ç‰¹å¾ï¼Œçº¿æ€§ç‰¹å¾ï¼Œä¸­å¿ƒç‰¹å¾å’Œå¯¹è§’çº¿ç‰¹å¾ï¼Œç»„åˆæˆç‰¹å¾æ¨¡æ¿ã€‚
 
-ÓÅµã£º
-1.»ı·ÖÍ¼Ïñ£¨integral image£©¿ìËÙ¼ÆËãHaar-likeÌØÕ÷¡£
-2.ÀûÓÃAdaboostËã·¨½øĞĞÌØÕ÷Ñ¡ÔñºÍ·ÖÀàÆ÷ÑµÁ·£¬°ÑÈõ·ÖÀàÆ÷×éºÏ³ÉÇ¿·ÖÀàÆ÷¡£
-3.²ÉÓÃ·ÖÀàÆ÷¼¶ÁªÌá¸ßĞ§ÂÊ¡£
+ä¼˜ç‚¹ï¼š
+1.ç§¯åˆ†å›¾åƒï¼ˆintegral imageï¼‰å¿«é€Ÿè®¡ç®—Haar-likeç‰¹å¾ã€‚
+2.åˆ©ç”¨Adaboostç®—æ³•è¿›è¡Œç‰¹å¾é€‰æ‹©å’Œåˆ†ç±»å™¨è®­ç»ƒï¼ŒæŠŠå¼±åˆ†ç±»å™¨ç»„åˆæˆå¼ºåˆ†ç±»å™¨ã€‚
+3.é‡‡ç”¨åˆ†ç±»å™¨çº§è”æé«˜æ•ˆç‡ã€‚
 
 
 
-¼ÓÔØ·ÖÀàÆ÷
-¶ÁÈëxml¸ñÊ½µÄÄ£ĞÍÎÄ¼ş£¬ÆäÖĞhaarcascade_frontalface_atl.xmlºÍhaarcascade_frontalface_atl2.xmlĞ§¹û½ÏºÃ
-ÎÄ¼şÔÚOpenCV°²×°Ä¿Â¼ÏÂµÄ¡°data/haarcascades/¡±Â·¾¶ÏÂ¡£
+åŠ è½½åˆ†ç±»å™¨
+è¯»å…¥xmlæ ¼å¼çš„æ¨¡å‹æ–‡ä»¶ï¼Œå…¶ä¸­haarcascade_frontalface_atl.xmlå’Œhaarcascade_frontalface_atl2.xmlæ•ˆæœè¾ƒå¥½
+æ–‡ä»¶åœ¨OpenCVå®‰è£…ç›®å½•ä¸‹çš„â€œdata/haarcascades/â€è·¯å¾„ä¸‹ã€‚
 
 */
 int main(int argc, char** argv) {
 	cv::Mat image;
-	image = imread("lena.jpg", 1);  //µ±Ç°¹¤³ÌµÄimageÄ¿Â¼ÏÂµÄmm.jpgÎÄ¼ş£¬×¢ÒâÄ¿Â¼·ûºÅ  
+	image = imread("lena.jpg", 1);  //å½“å‰å·¥ç¨‹çš„imageç›®å½•ä¸‹çš„mm.jpgæ–‡ä»¶ï¼Œæ³¨æ„ç›®å½•ç¬¦å·  
 	printf("dims %d \n " , image.dims );
 
 	assert(!image.empty());
+	//  CascadeClassifierä¸ºçº§è”åˆ†ç±»å™¨æ£€æµ‹ç±»
+	// ä½¿ç”¨Adaboostçš„æ–¹æ³•
+	// æå–LBP\HOG\HAARç‰¹å¾è¿›è¡Œç›®æ ‡æ£€æµ‹
+	// ç”¨ä¾‹: åŠ è½½traincascade.cppè¿›è¡Œè®­ç»ƒçš„åˆ†ç±»å™¨
+
 	if (!face_cascade.load(face_cascade_name)) {
-		printf("¼¶Áª·ÖÀàÆ÷´íÎó£¬¿ÉÄÜÎ´ÕÒµ½ÎÄ¼ş£¬¿½±´¸ÃÎÄ¼şµ½¹¤³ÌÄ¿Â¼ÏÂ£¡\n");
+		printf("çº§è”åˆ†ç±»å™¨é”™è¯¯ï¼Œå¯èƒ½æœªæ‰¾åˆ°æ–‡ä»¶ï¼Œæ‹·è´è¯¥æ–‡ä»¶åˆ°å·¥ç¨‹ç›®å½•ä¸‹ï¼\n");
 		return -1;
 	}
-	detectAndDisplay(image); //µ÷ÓÃÈËÁ³¼ì²âº¯Êı  
+	detectAndDisplay(image); //è°ƒç”¨äººè„¸æ£€æµ‹å‡½æ•°  
 	waitKey(0);
-	//ÔİÍ£ÏÔÊ¾Ò»ÏÂ¡£  
+	//æš‚åœæ˜¾ç¤ºä¸€ä¸‹ã€‚  
 }
 
 void detectAndDisplay(cv::Mat face) {
@@ -61,13 +66,13 @@ void detectAndDisplay(cv::Mat face) {
 	cv::Mat face_gray;
 	cv::Mat face_gray_temp;
 
-	cv::cvtColor(face, face_gray_temp, CV_BGR2GRAY);		//rgbÀàĞÍ×ª»»Îª»Ò¶ÈÀàĞÍ  
-	equalizeHist(face_gray_temp , face_gray);			//Ö±·½Í¼¾ùºâ»¯ 
+	cv::cvtColor(face, face_gray_temp, CV_BGR2GRAY);		//rgbç±»å‹è½¬æ¢ä¸ºç°åº¦ç±»å‹  
+	equalizeHist(face_gray_temp , face_gray);			//ç›´æ–¹å›¾å‡è¡¡åŒ– 
 
 
 
 	cv::Mat face_binary ;
-	cv::threshold(face_gray, face_binary , 128 /*·§Öµ*/, 255 /*×î´óÖµ*/, cv::ThresholdTypes::THRESH_BINARY );
+	cv::threshold(face_gray, face_binary , 128 /*é˜€å€¼*/, 255 /*æœ€å¤§å€¼*/, cv::ThresholdTypes::THRESH_BINARY );
 
 	cv::namedWindow("before_hist");
 	cv::imshow("before_hist", face_gray_temp);
@@ -81,36 +86,48 @@ void detectAndDisplay(cv::Mat face) {
 
 	printf("chl %d row %d col %d\n " , face_gray.channels() , face_gray.rows,face_gray.cols );
 	//face_cascade.detectMultiScale(face_gray, faces, 1.1, 2, CASCADE_SCALE_IMAGE, cv::Size(40, 40) );// robot
-	face_cascade.detectMultiScale(face_gray, faces, // ¶à³ß¶È¼ì²âº¯Êı   OpenCV¾É´úÂë cvHaarDetectObjectsº¯Êı 
-		1.1,  // Ëõ·Å±ÈÀı ±ØĞë´óÓÚ1 
-		2,    // ºÏ²¢´°¿ÚÊ±×îĞ¡µÄneighbor Ã¿¸öºòÑ¡¾ØÕóÖÁÉÙ°üº¬µÄ¸½½üÔªËØ¸öÊı ???
-		CV_HAAR_SCALE_IMAGE, // ¼ì²â±ê¼Ç Ö»¶Ô¾É¸ñÊ½µÄ·ÖÀàÆ÷ÓĞĞ§
-							 // CANNY±ßÔµ¼ì²â CV_HAAR_FIND_BIGGEST_OBJECTÑ°ÕÒ×îÄ¿±ê CV_HAAR_DO_ROUGH_SEACH³õÂÔËÑË÷
-		Size(1, 1));
+	face_cascade.detectMultiScale(face_gray, faces, // å¤šå°ºåº¦æ£€æµ‹å‡½æ•°   OpenCVæ—§ä»£ç  cvHaarDetectObjectså‡½æ•° 
+		1.1,  // ç¼©æ”¾æ¯”ä¾‹ å¿…é¡»å¤§äº1   æ¯æ¬¡å›¾åƒå°ºå¯¸å‡å°çš„æ¯”ä¾‹ä¸º1.1   åŸå›¾å®½/1.1/1.1/1.1 ... 
+		2,    // è¡¨ç¤ºæ¯ä¸€ä¸ªç›®æ ‡è‡³å°‘è¦è¢«æ£€æµ‹åˆ°3æ¬¡æ‰ç®—æ˜¯çœŸçš„ç›®æ ‡(å› ä¸ºå‘¨å›´çš„åƒç´ å’Œä¸åŒçš„çª—å£å¤§å°éƒ½å¯ä»¥æ£€æµ‹åˆ°äººè„¸)
+		CV_HAAR_SCALE_IMAGE,	// æ£€æµ‹æ ‡è®° åªå¯¹æ—§æ ¼å¼çš„åˆ†ç±»å™¨æœ‰æ•ˆ
+								// CV_HAAR_SCALE_IMAGEè¡¨ç¤ºä¸æ˜¯ç¼©æ”¾åˆ†ç±»å™¨æ¥æ£€æµ‹ï¼Œè€Œæ˜¯ç¼©æ”¾å›¾åƒ
+								// CANNYè¾¹ç¼˜æ£€æµ‹ CV_HAAR_FIND_BIGGEST_OBJECTå¯»æ‰¾æœ€ç›®æ ‡ CV_HAAR_DO_ROUGH_SEACHåˆç•¥æœç´¢
+		Size(1, 1)				// æœ€å°æ£€æµ‹çª—å£å¤§å° ç›®æ ‡çš„ æœ€å°æœ€å¤§å°ºå¯¸
+								// æœ€å¤§æ£€æµ‹çª—å£å¤§å°ï¼ˆé»˜è®¤æ˜¯å›¾åƒå¤§å°ï¼‰
+	);
+	/*
+		http://blog.csdn.net/u011447369/article/details/52451144
+		xmlæ–‡ä»¶é‡Œé¢widthå’Œheightæ˜¯åˆ†ç±»å™¨æ ·æœ¬å°ºå¯¸
+		ex4ï¼š
+		åˆ†ç±»å™¨ï¼š18*18ï¼›è¾“å…¥å›¾åƒï¼š26*26ï¼›detectMultiScale(frame_gray,vct_rc, 1.05, 1, 0, Size(22,22))ï¼›
+		å¤šå°ºåº¦æ£€æµ‹å°ºå¯¸ï¼š21*21ã€20*20ã€19*19
+
+	*/ 
+
 	//face_cascade.detectMultiScale(face_binary, faces, 1.1, 2, cv::CASCADE_SCALE_IMAGE, Size(1, 1)); 
 
 	printf("faces num %zd \n" , faces.size() );
 
 
 	for (int i = 0; i < faces.size(); i++) {
-		Point center(  faces[i].x + faces[i].width*0.5,   faces[i].y + faces[i].height*0.5   ); // Ô²ÖĞĞÄ
+		Point center(  faces[i].x + faces[i].width*0.5,   faces[i].y + faces[i].height*0.5   ); // åœ†ä¸­å¿ƒ
 		ellipse(face, center, 
-					Size(faces[i].width*0.5, faces[i].height*0.5), /* ÍÖÔ² Á½¸öÖ÷Öá°ë¾¶ */
+					Size(faces[i].width*0.5, faces[i].height*0.5), /* æ¤­åœ† ä¸¤ä¸ªä¸»è½´åŠå¾„ */
 					0, 
-					0, 360, /*ÆğÊ¼ºÍÖÕÖ¹½Ç¶È*/
-					Scalar(255, 0, 0)/*ÑÕÉ«*/, 
-					2/*´ÖÏ¸*/, 
-					7/*ÏßÀàĞÍ*/, 0);
+					0, 360, /*èµ·å§‹å’Œç»ˆæ­¢è§’åº¦*/
+					Scalar(255, 0, 0)/*é¢œè‰²*/, 
+					2/*ç²—ç»†*/, 
+					7/*çº¿ç±»å‹*/, 0);
 	}
 
-	imshow("ÈËÁ³Ê¶±ğ", face);
+	imshow("äººè„¸è¯†åˆ«", face);
 	
 }
 
 #else 
 
 
-#include "opencv/cv.h"			// C½Ó¿Ú 			
+#include "opencv/cv.h"			// Cæ¥å£ 			
 #include "opencv/highgui.h"				 
 
 #include "opencv2/objdetect/objdetect.hpp"  // CascadeClassifier
@@ -136,13 +153,13 @@ int main(int argc, char** argv)
 	cvNamedWindow("result", 1);
 
 	const char* filename = "lena.jpg";
-	IplImage* image = cvLoadImage(filename, 1); // ²»ÊÇÓÃ imread ·µ»Ø Mat image ¶øÊÇ·µ»Ø IplImage 
+	IplImage* image = cvLoadImage(filename, 1); // ä¸æ˜¯ç”¨ imread è¿”å› Mat image è€Œæ˜¯è¿”å› IplImage 
 
 	if (image)
 	{
 		detect_and_draw(image);
 		cvWaitKey(0);
-		cvReleaseImage(&image); // ÊÍ·ÅIplImage
+		cvReleaseImage(&image); // é‡Šæ”¾IplImage
 	}
 
 	cvDestroyWindow("result");
@@ -163,10 +180,10 @@ void detect_and_draw(IplImage* img)
 
 	//Image Preparation    
 	IplImage* gray = cvCreateImage(cvSize(img->width, img->height), 8, 1); // 8bit 1channnel
-	IplImage* small_img = cvCreateImage(cvSize(cvRound(img->width / scale), cvRound(img->height / scale)), 8, 1);// Ô­À´µÄ/1.2
+	IplImage* small_img = cvCreateImage(cvSize(cvRound(img->width / scale), cvRound(img->height / scale)), 8, 1);// åŸæ¥çš„/1.2
 	cvCvtColor(img, gray, CV_BGR2GRAY);
-	cvResize(gray, small_img, CV_INTER_LINEAR); // ÏßĞÔ  ËõĞ¡Í¼Æ¬
-	cvEqualizeHist(small_img, small_img);		//Ö±·½Í¼¾ùºâ  
+	cvResize(gray, small_img, CV_INTER_LINEAR); // çº¿æ€§  ç¼©å°å›¾ç‰‡
+	cvEqualizeHist(small_img, small_img);		//ç›´æ–¹å›¾å‡è¡¡  
 
 	CvMemStorage* storage = 0;
 	storage = cvCreateMemStorage(0); // 0 default 64k
@@ -176,7 +193,7 @@ void detect_and_draw(IplImage* img)
 	//const char* cascade_name = "haarcascade_frontalface_alt.xml"; /*    "haarcascade_profileface.xml";*/
 	const char* cascade_name = "haarcascade_frontalface_alt2.xml";
 
-	// È·±£ÎÄ¼ş´æÔÚ
+	// ç¡®ä¿æ–‡ä»¶å­˜åœ¨
 	FILE* f = fopen(cascade_name, "rb");
 	if (!f) {
 		printf("ERROR fopen !\n");
@@ -210,7 +227,7 @@ void detect_and_draw(IplImage* img)
 		storage,
 		1.1,
 		2,
-		0/*CV_HAAR_DO_CANNY_PRUNING*/,// CANNY±ßÔµ¼ì²â CV_HAAR_FIND_BIGGEST_OBJECTÑ°ÕÒ×îÄ¿±ê CV_HAAR_DO_ROUGH_SEACH³õÂÔËÑË÷
+		0/*CV_HAAR_DO_CANNY_PRUNING*/,// CANNYè¾¹ç¼˜æ£€æµ‹ CV_HAAR_FIND_BIGGEST_OBJECTå¯»æ‰¾æœ€ç›®æ ‡ CV_HAAR_DO_ROUGH_SEACHåˆç•¥æœç´¢
 		cvSize(30, 30));
 
 	t = (double)cvGetTickCount() - t;
